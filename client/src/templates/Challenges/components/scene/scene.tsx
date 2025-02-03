@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { FullScene } from '../../../../redux/prop-types';
 import { Loader } from '../../../../components/helpers';
 import ClosedCaptionsIcon from '../../../../assets/icons/closedcaptions';
+import ChallengeTranscript from '../challenge-transcript';
 import { sounds, images, backgrounds, characterAssets } from './scene-assets';
 import Character from './character';
 import { SceneSubject } from './scene-subject';
@@ -87,7 +88,7 @@ export function Scene({
 
   const initBackground = setup.background;
 
-  // The charactesr are memoized to prevent the useEffect from running on every
+  // The character are memoized to prevent the useEffect from running on every
   // render,
   const initCharacters = useMemo(
     () =>
@@ -151,6 +152,23 @@ export function Scene({
     // Until the play() promise resolves, we can't pause the audio
     if (canPauseRef.current) audioRef.current.pause();
     canPauseRef.current = false;
+  };
+
+  const buildTranscript = () => {
+    let transcriptText = '';
+    commands.forEach(command => {
+      if (command.character && command.dialogue && command.startTime) {
+        transcriptText =
+          transcriptText +
+          '\n' +
+          command.character +
+          ':' +
+          ' ' +
+          command.dialogue.text;
+      }
+    });
+
+    return transcriptText;
   };
 
   const playScene = useCallback(() => {
@@ -279,6 +297,7 @@ export function Scene({
     };
   }, []);
 
+  const transcriptText = buildTranscript();
   return (
     <Col lg={10} lgOffset={1} md={10} mdOffset={1}>
       <div
@@ -355,6 +374,7 @@ export function Scene({
           </>
         )}
       </div>
+      <ChallengeTranscript transcript={transcriptText} />
       <Spacer size='m' />
     </Col>
   );
