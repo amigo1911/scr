@@ -14,6 +14,8 @@ COPY --chown=node:node curriculum/ curriculum/
 # TODO: AFAIK it's just the intro translations. Those should be folded into the
 # curriculum and then we can remove this.
 COPY --chown=node:node client/ client/
+# TODO: Remove once `@fastify/oauth2` is fixed
+COPY --chown=node:node patches/ patches/
 
 # We have to prevent pnpm from deduping peer dependencies because otherwise it
 # will install all of the packages, not just api-server. Also, pnpm deploy is
