@@ -15,6 +15,8 @@ COPY --chown=node:node curriculum/ curriculum/
 # TODO: AFAIK it's just the intro translations. Those should be folded into the
 # curriculum and then we can remove this.
 COPY --chown=node:node client/ client/
+# TODO: Remove once `@fastify/oauth2` is fixed
+COPY --chown=node:node patches/ patches/
 
 RUN pnpm config set dedupe-peer-dependents false
 # While we want to ignore scripts generally, we do need to generate the prisma
