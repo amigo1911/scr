@@ -24,7 +24,7 @@ RUN pnpm config set dedupe-peer-dependents false
 # to have prisma as a prod dependency. The jq tricks are to ensure we're using
 # the right version of prisma.
 RUN pnpm install -F=api -F=curriculum -F tools/scripts/build -F challenge-parser \
-  --frozen-lockfile --ignore-scripts
+--frozen-lockfile --ignore-scripts
 RUN cd api && npx prisma@$(jq -r '.devDependencies.prisma' < package.json) generate
 
 # The api needs to source curriculum.json and build:curriculum relies on the
@@ -42,6 +42,8 @@ WORKDIR /home/node/build
 COPY --chown=node:node pnpm*.yaml .
 COPY --chown=node:node api/ api/
 COPY --chown=node:node shared/ shared/
+# TODO: Remove once `@fastify/oauth2` is fixed
+COPY --chown=node:node patches/ patches/
 RUN npm i -g pnpm@9
 
 # Weirdly this config does not seem necessary for the new api (the same number
