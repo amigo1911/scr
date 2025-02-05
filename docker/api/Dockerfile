@@ -40,6 +40,7 @@ RUN apt-get update && apt-get install -y jq
 
 WORKDIR /home/node/build
 COPY --chown=node:node pnpm*.yaml .
+COPY --chown=node:node package.json .
 COPY --chown=node:node api/ api/
 COPY --chown=node:node shared/ shared/
 # TODO: Remove once `@fastify/oauth2` is fixed
