@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Slot Request Form</title>
+    <style>
+        * {
+            font-family: Calibri, sans-serif;
+        }
+        .slot-button {
+            padding: 10px 20px;
+            margin: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            border-radius: 5px;
+        }
+        .slot-button:hover {
+            background-color: #45a049;
+        }
+        .form-container {
+            margin-top: 20px;
+        }
+        .reset-button {
+            padding: 10px 15px;
+            margin: 5px;
+            background-color: #d9534f;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            border-radius: 5px;
+        }
+        .reset-button:hover {
+            background-color: #c9302c;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <p id="date"></p>
+
+    <div>
+        <button class="slot-button" onclick="addNewSlotRow()">New Slot</button>
+        <button class="slot-button" onclick="addCancelSlotRow()">Cancel Slot</button>
+        <button class="slot-button" onclick="addChangeSlotRow()">Change Slot</button>
+    </div>
+
+    <!-- New Slot Form -->
+    <div id="SlotForm" class="form-container">
+        <h3>SCR Generator</h3>
+        <table id="slotTable">
+            <tr>
+                <th>Type</th>
+                <th>Departure/Arrival</th>
+                <th>Airport</th>
+                <th>Flight Number</th>
+                <th>Date of Operation</th>
+                <th>Day of Operation</th>
+                <th>Seat Capacity</th>
+                <th>Aircraft Type</th>
+                <th>Time (UTC)</th>
+                <th>Destination/Origin</th>
+                <th>STC</th>
+                <th>Delete</th>
+            </tr>
+        </table>
+        <br>
+        <button class="slot-button" onclick="generateAllSCR()">Generate All SCRs</button>
+        <button class="reset-button" onclick="window.location.reload()">Reset</button>
+    </div>
+
+    <!-- SCR Messages Table -->
+    <div id="scrTableContainer" class="form-container" style="display:none;">
+        <h3>Generated SCR Requests</h3>
+        <table id="scrTable">
+            <tr>
+                <th>Airport</th>
+                <th>SCR Message</th>
+                <th>Email</th>
+                <th>Send Email</th> 
+            </tr>
+        </table>
+    </div>
+
+
+    <script>
+        // Display current date
+        document.getElementById("date").innerText = new Date().toLocaleDateString();
+
+        function addNewSlotRow() {
+            let table = document.getElementById("slotTable");
+            let rowIndex = table.rows.length;
+            let row = table.insertRow(-1);
+
+            row.innerHTML = `
+                <td>N</td>
+                <td>
+                    <select id="slotType${rowIndex}">
+                        <option value="NewDeparture">Departure</option>
+                        <option value="NewArrival">Arrival</option>
+                    </select>
+                </td>
+                <td><input type="text" id="airport${rowIndex}"></td>
+                <td><input type="text" id="flightNumber${rowIndex}"></td>
+                <td><input type="date" id="dateOfOperation${rowIndex}" onchange="updateDateAndDayOfOperation(${rowIndex})"></td>
+                <td><input type="text" id="dayOfOperation${rowIndex}" readonly></td>
+                <td><input type="text" id="seatCapacity${rowIndex}"></td>
+                <td><input type="text" id="aircraftType${rowIndex}"></td>
+                <td><input type="time" id="timeUTC${rowIndex}"></td>
+                <td><input type="text" id="destinationOrigin${rowIndex}"></td>
+                <td><input type="text" id="stc${rowIndex}"></td>
+                <td><button onclick="deleteRow(this)">❌</button></td>
+            `;
+        }
+
+        function addCancelSlotRow() {
+            let table = document.getElementById("slotTable");
+            let rowIndex = table.rows.length;
+            let row = table.insertRow(-1);
+
+            row.innerHTML = `
+                <td>D</td>
+                <td>
+                    <select id="slotType${rowIndex}">
+                        <option value="CancelDeparture">Departure</option>
+                        <option value="CancelArrival">Arrival</option>
+                    </select>
+                </td>
+                <td><input type="text" id="airport${rowIndex}"></td>
+                <td><input type="text" id="flightNumber${rowIndex}"></td>
+                <td><input type="date" id="dateOfOperation${rowIndex}" onchange="updateDateAndDayOfOperation(${rowIndex})"></td>
+                <td><input type="text" id="dayOfOperation${rowIndex}" readonly></td>
+                <td><input type="text" id="seatCapacity${rowIndex}"></td>
+                <td><input type="text" id="aircraftType${rowIndex}"></td>
+                <td><input type="time" id="timeUTC${rowIndex}"></td>
+                <td><input type="text" id="destinationOrigin${rowIndex}"></td>
+                <td><input type="text" id="stc${rowIndex}"></td>
+                <td><button onclick="deleteRow(this)">❌</button></td>
+            `;
+        }
+
+        function addChangeSlotRow() {
+            let table = document.getElementById("slotTable");
+            let rowIndex = table.rows.length;
+
+            let originalRow = table.insertRow(-1);
+            originalRow.classList.add("original-row");
+            originalRow.innerHTML = `
+                <td>C</td>
+                <td><select id="slotType${rowIndex}"><option value="ChangeDeparture">Departure</option><option value="ChangeArrival">Arrival</option></select></td>
+                <td><input type="text" id="airport${rowIndex}"></td>
+                <td><input type="text" id="flightNumber${rowIndex}"></td>
+                <td><input type="date" id="dateOfOperation${rowIndex}" onchange="updateDateAndDayOfOperation(${rowIndex})"></td>
+                <td><input type="text" id="dayOfOperation${rowIndex}" readonly></td>
+                <td><input type="text" id="seatCapacity${rowIndex}"></td>
+                <td><input type="text" id="aircraftType${rowIndex}"></td>
+                <td><input type="time" id="timeUTC${rowIndex}"></td>
+                <td><input type="text" id="destinationOrigin${rowIndex}"></td>
+                <td><input type="text" id="stc${rowIndex}"></td>
+                <td rowspan="2"><button onclick="deleteChangeSlot(this)">❌</button></td>
+            `;
+
+            let newRow = table.insertRow(-1);
+            newRow.classList.add("new-row");
+            newRow.innerHTML = `
+                <td>R</td>
+                <td><select id="newSlotType${rowIndex}"><option value="ChangeDeparture">Departure</option><option value="ChangeArrival">Arrival</option></td>
+                <td><input type="text" id="newAirport${rowIndex}"></td>
+                <td><input type="text" id="newFlightNumber${rowIndex}"></td>
+                <td><input type="date" id="newDateOfOperation${rowIndex}" onchange="updateNewDateAndNewDayOfOperation(${rowIndex})"></td>
+                <td><input type="text" id="newDayOfOperation${rowIndex}" readonly></td>
+                <td><input type="text" id="newSeatCapacity${rowIndex}"></td>
+                <td><input type="text" id="newAircraftType${rowIndex}"></td>
+                <td><input type="time" id="newTimeUTC${rowIndex}"></td>
+                <td><input type="text" id="newDestinationOrigin${rowIndex}"></td>
+                <td><input type="text" id="newStc${rowIndex}"></td>
+            `;
+        }
+
+        function deleteRow(button) {
+            let row = button.parentNode.parentNode;
+            row.parentNode.removeChild(row);
+        }
+
+        function deleteChangeSlot(button) {
+            let row = button.parentNode.parentNode;
+            let nextRow = row.nextElementSibling;
+            row.parentNode.removeChild(row);
+            if (nextRow) nextRow.parentNode.removeChild(nextRow);
+        }
+
+        function updateDateAndDayOfOperation(rowIndex) {
+            const dateInput = document.getElementById(`dateOfOperation${rowIndex}`).value;
+            if (!dateInput) return;
+
+            const date = new Date(dateInput);
+            const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+            const formattedDate = `${String(date.getDate()).padStart(2, '0')}${months[date.getMonth()]}`;
+
+            document.getElementById(`dateOfOperation${rowIndex}`).dataset.formattedDate = formattedDate;
+
+            const dayMapping = ["0000007", "1000000", "0200000", "0030000", "0004000", "0000500", "0000060"];
+            document.getElementById(`dayOfOperation${rowIndex}`).value = dayMapping[date.getDay()];
+        }
+
+        function updateNewDateAndNewDayOfOperation(rowIndex) {
+            const dateInput = document.getElementById(`newDateOfOperation${rowIndex}`).value;
+            if (!dateInput) return;
+
+            const date = new Date(dateInput);
+            const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+            const formattedDate = `${String(date.getDate()).padStart(2, '0')}${months[date.getMonth()]}`;
+
+            document.getElementById(`newDateOfOperation${rowIndex}`).dataset.formattedDate = formattedDate;
+
+            const dayMapping = ["0000007", "1000000", "0200000", "0030000", "0004000", "0000500", "0000060"];
+            document.getElementById(`newDayOfOperation${rowIndex}`).value = dayMapping[date.getDay()];
+        }
+
+        function generateAllSCR() {
+            document.getElementById("scrTableContainer").style.display = 'block';
+
+            let table = document.getElementById("slotTable");
+            let scrMessages = {};
+
+            for (let i = 1; i < table.rows.length; i++) { // Start from 1 to skip header row
+                let slotType = document.getElementById(`slotType${i}`)?.value || document.getElementById(`newSlotType${i}`)?.value;
+                let airport = document.getElementById(`airport${i}`)?.value.toUpperCase() || document.getElementById(`newAirport${i}`)?.value.toUpperCase();
+
+                if (!scrMessages[airport]) {
+                    scrMessages[airport] = `SCR\nW24\n${document.getElementById(`dateOfOperation${i}`)?.dataset.formattedDate || document.getElementById(`newDateOfOperation${i}`)?.dataset.formattedDate}\n${airport}\n`;
+                }
+
+                scrMessages[airport] += generateSCR(i, slotType);
+            }
+
+            for (const [airport, scrMessage] of Object.entries(scrMessages)) {
+                scrMessages[airport] += `SI SLOT REQ ${airport}\n`;
+                let email = getAirportEmail(airport);
+                addSCRToTable(airport, scrMessages[airport], email);
+            }
+        }
+
+        function generateSCR(rowIndex, slotType) {
+            let airport = document.getElementById(`airport${rowIndex}`)?.value.toUpperCase() || document.getElementById(`newAirport${rowIndex}`)?.value.toUpperCase();
+            let flightNumber = document.getElementById(`flightNumber${rowIndex}`)?.value.toUpperCase() || document.getElementById(`newFlightNumber${rowIndex}`)?.value.toUpperCase();
+            let dateOfOperation = document.getElementById(`dateOfOperation${rowIndex}`)?.dataset.formattedDate || document.getElementById(`newDateOfOperation${rowIndex}`)?.dataset.formattedDate;
+            let dayOfOperation = document.getElementById(`dayOfOperation${rowIndex}`)?.value || document.getElementById(`newDayOfOperation${rowIndex}`)?.value;
+            let seatCapacity = document.getElementById(`seatCapacity${rowIndex}`)?.value || document.getElementById(`newSeatCapacity${rowIndex}`)?.value;
+            let aircraftType = document.getElementById(`aircraftType${rowIndex}`)?.value.toUpperCase() || document.getElementById(`newAircraftType${rowIndex}`)?.value.toUpperCase();
+            let timeUTC = document.getElementById(`timeUTC${rowIndex}`)?.value.replace(":", "") || document.getElementById(`newTimeUTC${rowIndex}`)?.value.replace(":", "");
+            let destinationOrigin = document.getElementById(`destinationOrigin${rowIndex}`)?.value.toUpperCase() || document.getElementById(`newDestinationOrigin${rowIndex}`)?.value.toUpperCase();
+            let stc = document.getElementById(`stc${rowIndex}`)?.value.toUpperCase() || document.getElementById(`newStc${rowIndex}`)?.value.toUpperCase();
+
+            let scrMessage = "";
+            if (slotType === "NewDeparture") {
+                scrMessage += `N ${flightNumber} ${dateOfOperation}${dateOfOperation} ${dayOfOperation} ${seatCapacity}${aircraftType} ${timeUTC}${destinationOrigin} ${stc}\n`;
+            } else if (slotType === "NewArrival") {
+                scrMessage += `N${flightNumber} ${dateOfOperation}${dateOfOperation} ${dayOfOperation} ${seatCapacity}${aircraftType} ${destinationOrigin}${timeUTC} ${stc}\n`;
+            } else if (slotType === "CancelDeparture") {
+                scrMessage += `D ${flightNumber} ${dateOfOperation}${dateOfOperation} ${dayOfOperation} ${seatCapacity}${aircraftType} ${timeUTC}${destinationOrigin} ${stc}\n`;
+            } else if (slotType === "CancelArrival") {
+                scrMessage += `D${flightNumber} ${dateOfOperation}${dateOfOperation} ${dayOfOperation} ${seatCapacity}${aircraftType} ${destinationOrigin}${timeUTC} ${stc}\n`;
+            } else if (slotType === "ChangeDeparture") {
+                let newFlightNumber = document.getElementById(`newFlightNumber${rowIndex}`).value.toUpperCase();
+                let newDateOfOperation = document.getElementById(`newDateOfOperation${rowIndex}`).dataset.formattedDate;
+                let newDayOfOperation = document.getElementById(`newDayOfOperation${rowIndex}`).value;
+                let newSeatCapacity = document.getElementById(`newSeatCapacity${rowIndex}`).value;
+                let newAircraftType = document.getElementById(`newAircraftType${rowIndex}`).value.toUpperCase();
+                let newTimeUTC = document.getElementById(`newTimeUTC${rowIndex}`).value.replace(":", "");
+                let newDestinationOrigin = document.getElementById(`newDestinationOrigin${rowIndex}`).value.toUpperCase();
+                let newStc = document.getElementById(`newStc${rowIndex}`).value.toUpperCase();
+
+                scrMessage += `C ${flightNumber} ${dateOfOperation}${dateOfOperation} ${dayOfOperation} ${seatCapacity}${aircraftType} ${timeUTC}${destinationOrigin} ${stc}\n`;
+                scrMessage += `R ${newFlightNumber} ${newDateOfOperation}${newDateOfOperation} ${newDayOfOperation} ${newSeatCapacity}${newAircraftType} ${newTimeUTC}${newDestinationOrigin} ${newStc}\n`;
+            } else if (slotType === "ChangeArrival") {
+                let newFlightNumber = document.getElementById(`newFlightNumber${rowIndex}`).value.toUpperCase();
+                let newDateOfOperation = document.getElementById(`newDateOfOperation${rowIndex}`).dataset.formattedDate;
+                let newDayOfOperation = document.getElementById(`newDayOfOperation${rowIndex}`).value;
+                let newSeatCapacity = document.getElementById(`newSeatCapacity${rowIndex}`).value;
+                let newAircraftType = document.getElementById(`newAircraftType${rowIndex}`).value.toUpperCase();
+                let newTimeUTC = document.getElementById(`newTimeUTC${rowIndex}`).value.replace(":", "");
+                let newDestinationOrigin = document.getElementById(`newDestinationOrigin${rowIndex}`).value.toUpperCase();
+                let newStc = document.getElementById(`newStc${rowIndex}`).value.toUpperCase();
+
+                scrMessage +=`C${flightNumber} ${dateOfOperation}${dateOfOperation} ${dayOfOperation} ${seatCapacity}${aircraftType} ${destinationOrigin}${timeUTC} ${stc}\n`;
+                scrMessage +=`R${newFlightNumber} ${newDateOfOperation}${newDateOfOperation} ${newDayOfOperation} ${newSeatCapacity}${newAircraftType} ${newDestinationOrigin}${newTimeUTC} ${newStc}\n`;
+            }
+
+            return scrMessage;
+        }
+
+        function addSCRToTable(airport, scrMessage, email) {
+            let table = document.getElementById("scrTable");
+            let newRow = table.insertRow(-1);
+        
+            newRow.insertCell(0).innerText = airport;
+            newRow.insertCell(1).innerText = scrMessage;
+            newRow.insertCell(2).innerText = email;
+            newRow.insertCell(3).innerHTML = `<button onclick="sendEmailFromRow(this)">Send Email</button>`;
+
+        }
+    
+    let airportEmails = {}; // Object to store airport email data
+    let emailDataLoaded = false; // Flag to track when data is ready
+
+    // Load airport emails from JSON file
+    async function loadAirportEmails() {
+        try {
+            const response = await fetch("assets/airports.json");
+            const data = await response.json();
+            
+            data.forEach(entry => {
+                airportEmails[entry.code.toUpperCase()] = entry.email.join("; "); // Convert codes to uppercase & format emails
+            });
+
+            emailDataLoaded = true; // Mark data as ready
+            console.log("Airport email data loaded:", airportEmails); // Debug log
+
+        } catch (error) {
+            console.error("Error loading airport emails:", error);
+        }
+    }
+
+    // Function to get emails for a given airport code
+    function getAirportEmail(airport) {
+        if (!emailDataLoaded) {
+            console.warn("Email data not loaded yet.");
+            return "unknown@example.com"; // Handle case where data isn't ready
+        }
+
+        return airportEmails[airport.toUpperCase()] || "unknown@example.com";
+    }
+
+    // Function to send email using airport code from the table
+    function sendEmailFromRow(button) {
+        let row = button.closest("tr"); // Find the clicked row
+        let airport = row.cells[0].innerText.trim().toUpperCase(); // Get airport code
+        let scrMessage = row.cells[1].innerText.trim(); // Get SCR message
+        
+        console.log("Fetching email for:", airport); // Debugging log
+        let emails = getAirportEmail(airport); // Get emails for this airport
+
+        console.log("Emails found:", emails); // Debugging log
+        let subject = `SLOT REQ ${airport}`;
+        let body = encodeURIComponent(scrMessage.replace(/\n/g, "\n"));
+        let outlookURL = `mailto:${emails}?subject=${subject}&body=${body}`;
+        
+        window.location.href = outlookURL; // Open email client
+    }
+
+    // Ensure emails are loaded before any interactions
+    document.addEventListener("DOMContentLoaded", loadAirportEmails);
+</script>
+
+        
+    </script>
+</body>
+</html>
+
